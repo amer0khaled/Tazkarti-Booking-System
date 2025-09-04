@@ -12,18 +12,18 @@ import org.amerkhaled.eventservice.web.dto.EventSummaryDTO;
 import org.amerkhaled.eventservice.web.dto.VenueSummaryDTO;
 import org.amerkhaled.eventservice.web.mapper.EventMapper;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -37,10 +37,10 @@ class EventControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @MockBean
+    @MockitoBean
     private EventService eventService;
 
-    @MockBean
+    @MockitoBean
     private EventMapper eventMapper;
 
     @Test
@@ -58,10 +58,47 @@ class EventControllerTest {
                 venueId
         );
 
-        Event entity = Event.builder().name("Name").category(EventCategory.MUSIC).startedAt(start).endedAt(end).build();
-        Event saved = Event.builder().id(UUID.randomUUID()).name("Name").category(EventCategory.MUSIC).status(EventStatus.DRAFT).startedAt(start).endedAt(end).venue(Venue.builder().id(venueId).name("Hall").capacity(10).city("C").state("S").postalCode("0").country("X").build()).build();
-        EventResponseDTO resp = new EventResponseDTO(saved.getId(), saved.getName(), saved.getDescription(), saved.getCategory().name(), saved.getStatus().name(), start, end,
-                new VenueSummaryDTO(saved.getVenue().getId(), saved.getVenue().getName(), saved.getVenue().getCapacity(), saved.getVenue().getCity(), saved.getVenue().getCountry()));
+        Event entity = Event.builder()
+                .name("Name")
+                .category(EventCategory.MUSIC)
+                .startedAt(start)
+                .endedAt(end)
+                .build();
+
+        Event saved = Event.builder()
+                .id(UUID.randomUUID())
+                .name("Name")
+                .category(EventCategory.MUSIC)
+                .status(EventStatus.DRAFT)
+                .startedAt(start)
+                .endedAt(end)
+                .venue(Venue.builder()
+                        .id(venueId)
+                        .name("Hall")
+                        .capacity(10)
+                        .city("C")
+                        .state("S")
+                        .postalCode("0")
+                        .country("X")
+                        .build())
+                .build();
+
+        EventResponseDTO resp = new EventResponseDTO(
+                saved.getId(),
+                saved.getName(),
+                saved.getDescription(),
+                saved.getCategory().name(),
+                saved.getStatus().name(),
+                start,
+                end,
+                new VenueSummaryDTO(
+                        saved.getVenue().getId(),
+                        saved.getVenue().getName(),
+                        saved.getVenue().getCapacity(),
+                        saved.getVenue().getCity(),
+                        saved.getVenue().getCountry()
+                )
+        );
 
         when(eventMapper.toEntity(any(EventRequestDTO.class))).thenReturn(entity);
         when(eventService.createEvent(eq(entity), eq(venueId))).thenReturn(saved);
@@ -80,8 +117,17 @@ class EventControllerTest {
     @Test
     void publishEvent_returnsOk() throws Exception {
         UUID id = UUID.randomUUID();
-        Event e = Event.builder().id(id).name("N").category(EventCategory.MUSIC).status(EventStatus.PUBLISHED).build();
-        EventResponseDTO dto = new EventResponseDTO(id, "N", null, "MUSIC", "PUBLISHED", null, null, null);
+        Event e = Event.builder()
+                .id(id)
+                .name("N")
+                .category(EventCategory.MUSIC)
+                .status(EventStatus.PUBLISHED)
+                .build();
+
+        EventResponseDTO dto = new EventResponseDTO(
+                id, "N", null, "MUSIC", "PUBLISHED", null, null, null
+        );
+
         when(eventService.publishEvent(id)).thenReturn(e);
         when(eventMapper.toResponseDto(e)).thenReturn(dto);
 
@@ -93,8 +139,17 @@ class EventControllerTest {
     @Test
     void cancelEvent_returnsOk() throws Exception {
         UUID id = UUID.randomUUID();
-        Event e = Event.builder().id(id).name("N").category(EventCategory.MUSIC).status(EventStatus.CANCELLED).build();
-        EventResponseDTO dto = new EventResponseDTO(id, "N", null, "MUSIC", "CANCELLED", null, null, null);
+        Event e = Event.builder()
+                .id(id)
+                .name("N")
+                .category(EventCategory.MUSIC)
+                .status(EventStatus.CANCELLED)
+                .build();
+
+        EventResponseDTO dto = new EventResponseDTO(
+                id, "N", null, "MUSIC", "CANCELLED", null, null, null
+        );
+
         when(eventService.cancelEvent(id)).thenReturn(e);
         when(eventMapper.toResponseDto(e)).thenReturn(dto);
 
@@ -109,8 +164,8 @@ class EventControllerTest {
         UUID id2 = UUID.randomUUID();
         Event e1 = Event.builder().id(id1).name("A").category(EventCategory.MUSIC).build();
         Event e2 = Event.builder().id(id2).name("B").category(EventCategory.MUSIC).build();
-        when(eventService.getAllEvents()).thenReturn(List.of(e1, e2));
 
+        when(eventService.getAllEvents()).thenReturn(List.of(e1, e2));
         when(eventMapper.toSummaryDto(e1)).thenReturn(new EventSummaryDTO(id1, "A", "MUSIC", null, null, null));
         when(eventMapper.toSummaryDto(e2)).thenReturn(new EventSummaryDTO(id2, "B", "MUSIC", null, null, null));
 
@@ -123,8 +178,17 @@ class EventControllerTest {
     @Test
     void getEventById_returnsDto() throws Exception {
         UUID id = UUID.randomUUID();
-        Event e = Event.builder().id(id).name("A").category(EventCategory.MUSIC).status(EventStatus.DRAFT).build();
-        EventResponseDTO dto = new EventResponseDTO(id, "A", null, "MUSIC", "DRAFT", null, null, null);
+        Event e = Event.builder()
+                .id(id)
+                .name("A")
+                .category(EventCategory.MUSIC)
+                .status(EventStatus.DRAFT)
+                .build();
+
+        EventResponseDTO dto = new EventResponseDTO(
+                id, "A", null, "MUSIC", "DRAFT", null, null, null
+        );
+
         when(eventService.getEventById(id)).thenReturn(e);
         when(eventMapper.toResponseDto(e)).thenReturn(dto);
 
