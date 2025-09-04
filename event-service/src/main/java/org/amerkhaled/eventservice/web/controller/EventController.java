@@ -4,10 +4,9 @@ import jakarta.validation.Valid;
 import org.amerkhaled.eventservice.domain.Event;
 import org.amerkhaled.eventservice.domain.Ticket;
 import org.amerkhaled.eventservice.service.EventService;
-import org.amerkhaled.eventservice.web.dto.EventRequestDTO;
-import org.amerkhaled.eventservice.web.dto.EventResponseDTO;
-import org.amerkhaled.eventservice.web.dto.EventSummaryDTO;
+import org.amerkhaled.eventservice.web.dto.*;
 import org.amerkhaled.eventservice.web.mapper.EventMapper;
+import org.amerkhaled.eventservice.web.mapper.TicketMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -21,27 +20,28 @@ public class EventController {
 
     private final EventService eventService;
     private final EventMapper eventMapper;
+    private final TicketMapper ticketMapper;
 
     public EventController(EventService eventService,
-                           EventMapper eventMapper) {
-
+                           EventMapper eventMapper,
+                           TicketMapper ticketMapper) {
         this.eventService = eventService;
         this.eventMapper = eventMapper;
-
+        this.ticketMapper = ticketMapper;
     }
 
     @PostMapping
     public ResponseEntity<EventResponseDTO> createEvent(
-            @RequestParam UUID venueId,
             @Valid @RequestBody EventRequestDTO dto) {
 
         Event event = eventMapper.toEntity(dto);
-        Event created = eventService.createEvent(event, venueId);
+        Event created = eventService.createEvent(event, dto.venueId());
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(eventMapper.toResponseDto(created));
     }
+
 
     @PatchMapping("/{id}/publish")
     public ResponseEntity<EventResponseDTO> publishEvent(@PathVariable UUID id) {
@@ -58,9 +58,11 @@ public class EventController {
     @PostMapping("/{id}/tickets")
     public ResponseEntity<EventResponseDTO> addTicket(
             @PathVariable UUID id,
-            @Valid @RequestBody Ticket ticket) {
+            @Valid @RequestBody TicketRequestDTO dto) {
 
+        Ticket ticket = ticketMapper.toEntity(dto);
         Event updated = eventService.addTicket(id, ticket);
+
         return ResponseEntity.ok(eventMapper.toResponseDto(updated));
     }
 
@@ -79,6 +81,4 @@ public class EventController {
         Event event = eventService.getEventById(id);
         return ResponseEntity.ok(eventMapper.toResponseDto(event));
     }
-
-
 }

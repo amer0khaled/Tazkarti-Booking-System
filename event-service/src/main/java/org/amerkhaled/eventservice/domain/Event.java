@@ -1,5 +1,6 @@
 package org.amerkhaled.eventservice.domain;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -27,7 +28,7 @@ public class Event {
     @Column(nullable = false, length = 200)
     private String name;
 
-    @Lob
+    @Column(length = 500)
     private String description;
 
     @Enumerated(EnumType.STRING)
@@ -52,15 +53,23 @@ public class Event {
     @Column(nullable = false)
     private LocalDateTime endedAt;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "venue_id", nullable = false)
     private Venue venue;
 
     @OneToMany(mappedBy = "event", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
     private List<Ticket> tickets = new ArrayList<>();
 
     // --- Domain Logic ---
     public void addTicketType(Ticket ticket) {
+        if (ticket == null) {
+            throw new IllegalArgumentException("Ticket cannot be null");
+        }
+        if (venue == null) {
+            throw new IllegalStateException("Event must have a venue assigned before adding tickets");
+        }
+
         int totalTickets = tickets.stream()
                 .mapToInt(Ticket::getQuantity)
                 .sum() + ticket.getQuantity();
@@ -72,6 +81,7 @@ public class Event {
         tickets.add(ticket);
         ticket.setEvent(this);
     }
+
 
     public void removeTicket(Ticket ticket) {
         tickets.remove(ticket);

@@ -1,5 +1,6 @@
 package org.amerkhaled.eventservice.domain;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -39,8 +40,9 @@ public class Ticket {
     @Column(nullable = false)
     private int remainingQuantity; // updated when booked/cancelled
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "event_id", nullable = false)
+    @ManyToOne
+    @JoinColumn(name = "event_id")
+    @JsonBackReference
     private Event event;
 
     @Column(name = "expiration_date")
@@ -53,7 +55,11 @@ public class Ticket {
     private LocalDateTime updatedAt;
 
     // --- Domain Logic ---
+
     public void reserve(int count) {
+        if (count <= 0) {
+            throw new IllegalArgumentException("Count must be greater than zero");
+        }
         if (remainingQuantity < count) {
             throw new IllegalStateException("Not enough tickets available");
         }
@@ -62,11 +68,21 @@ public class Ticket {
     }
 
     public void release(int count) {
+        if (count <= 0) {
+            throw new IllegalArgumentException("Count must be greater than zero");
+        }
+        if (remainingQuantity + count > quantity) {
+            throw new IllegalStateException("Cannot release more tickets than total quantity");
+        }
         remainingQuantity += count;
         ticketStatus = TicketStatus.AVAILABLE;
     }
 
     protected void setEvent(Event event) {
         this.event = event;
+    }
+
+    public boolean isExpired() {
+        return expirationDate != null && LocalDateTime.now().isAfter(expirationDate);
     }
 }
